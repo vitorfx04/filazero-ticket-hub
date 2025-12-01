@@ -10,6 +10,7 @@ interface TicketContextType {
   updateDescription: (id: string, description: string) => void;
   deleteTicket: (id: string) => void;
   getTicketById: (id: string) => Ticket | undefined;
+  updateElapsedTime: (id: string, elapsedTime: number) => void;
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined);
@@ -35,6 +36,8 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           ...t,
           createdAt: new Date(t.createdAt),
           updatedAt: new Date(t.updatedAt),
+          lastStartedAt: t.lastStartedAt ? new Date(t.lastStartedAt) : null,
+          elapsedTime: t.elapsedTime || 0,
         })));
       }
     } else {
@@ -59,15 +62,42 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updatedAt: new Date(),
       notes: [],
       userId: user.id,
+      elapsedTime: 0,
+      lastStartedAt: new Date(),
     };
     saveTickets([newTicket, ...tickets]);
   };
 
   const updateTicketStatus = (id: string, status: TicketStatus) => {
     saveTickets(
-      tickets.map((t) =>
-        t.id === id ? { ...t, status, updatedAt: new Date() } : t
-      )
+      tickets.map((t) => {
+        if (t.id !== id) return t;
+        
+        let newElapsedTime = t.elapsedTime;
+        let newLastStartedAt = t.lastStartedAt;
+        
+        // If currently open and has a start time, accumulate the elapsed time
+        if (t.status === 'open' && t.lastStartedAt) {
+          const now = new Date().getTime();
+          const started = new Date(t.lastStartedAt).getTime();
+          newElapsedTime += Math.floor((now - started) / 1000);
+        }
+        
+        // If transitioning to open, start the timer
+        if (status === 'open') {
+          newLastStartedAt = new Date();
+        } else {
+          newLastStartedAt = null;
+        }
+        
+        return {
+          ...t,
+          status,
+          elapsedTime: newElapsedTime,
+          lastStartedAt: newLastStartedAt,
+          updatedAt: new Date(),
+        };
+      })
     );
   };
 
@@ -95,6 +125,14 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const getTicketById = (id: string) => tickets.find((t) => t.id === id);
 
+  const updateElapsedTime = (id: string, elapsedTime: number) => {
+    saveTickets(
+      tickets.map((t) =>
+        t.id === id ? { ...t, elapsedTime, updatedAt: new Date() } : t
+      )
+    );
+  };
+
   return (
     <TicketContext.Provider
       value={{
@@ -105,6 +143,7 @@ export const TicketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateDescription,
         deleteTicket,
         getTicketById,
+        updateElapsedTime,
       }}
     >
       {children}
