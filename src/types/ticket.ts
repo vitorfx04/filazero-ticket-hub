@@ -10,6 +10,8 @@ export interface Ticket {
   updatedAt: Date;
   notes: string[];
   userId: string;
+  elapsedTime: number; // in seconds
+  lastStartedAt: Date | null; // when the timer was last started
 }
 
 export interface User {

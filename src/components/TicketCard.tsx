@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { useTickets } from '@/contexts/TicketContext';
-import { Play, Pause, CheckCircle, Eye, Trash2 } from 'lucide-react';
+import { Play, Pause, CheckCircle, Eye, Trash2, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useTicketTimer, formatTime } from '@/hooks/useTicketTimer';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -15,6 +16,7 @@ interface TicketCardProps {
 
 export const TicketCard = ({ ticket, onView }: TicketCardProps) => {
   const { updateTicketStatus, deleteTicket } = useTickets();
+  const displayTime = useTicketTimer(ticket);
 
   const handlePause = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -68,9 +70,15 @@ export const TicketCard = ({ ticket, onView }: TicketCardProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {ticket.description || 'Sem descrição'}
         </p>
+        <div className="flex items-center gap-2 mb-4">
+          <Clock className={`h-4 w-4 ${ticket.status === 'open' ? 'text-status-open animate-pulse' : 'text-muted-foreground'}`} />
+          <span className={`text-sm font-mono font-medium ${ticket.status === 'open' ? 'text-status-open' : 'text-muted-foreground'}`}>
+            {formatTime(displayTime)}
+          </span>
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(ticket.createdAt, { addSuffix: true, locale: ptBR })}

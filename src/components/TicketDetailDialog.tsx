@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
@@ -14,9 +15,10 @@ import { useTickets } from '@/contexts/TicketContext';
 import { Ticket } from '@/types/ticket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Save, MessageSquarePlus, Play, Pause, CheckCircle } from 'lucide-react';
+import { Save, MessageSquarePlus, Play, Pause, CheckCircle, Clock, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { useTicketTimer, formatTime, parseTimeString } from '@/hooks/useTicketTimer';
 
 interface TicketDetailDialogProps {
   ticket: Ticket | null;
@@ -29,12 +31,32 @@ export const TicketDetailDialog = ({
   open,
   onOpenChange,
 }: TicketDetailDialogProps) => {
-  const { updateDescription, addNote, updateTicketStatus } = useTickets();
+  const { updateDescription, addNote, updateTicketStatus, updateElapsedTime } = useTickets();
   const [description, setDescription] = useState('');
   const [newNote, setNewNote] = useState('');
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [timeInput, setTimeInput] = useState('');
+  
+  const displayTime = useTicketTimer(ticket || { elapsedTime: 0, lastStartedAt: null, status: 'closed' } as Ticket);
 
   if (!ticket) return null;
+
+  const handleSaveTime = () => {
+    const seconds = parseTimeString(timeInput);
+    if (seconds !== null) {
+      updateElapsedTime(ticket.id, seconds);
+      setIsEditingTime(false);
+      toast.success('Tempo atualizado!');
+    } else {
+      toast.error('Formato inválido. Use HH:MM:SS');
+    }
+  };
+
+  const startEditingTime = () => {
+    setTimeInput(formatTime(displayTime));
+    setIsEditingTime(true);
+  };
 
   const handleSaveDescription = () => {
     updateDescription(ticket.id, description);
@@ -68,6 +90,41 @@ export const TicketDetailDialog = ({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* Timer */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <Clock className={`h-5 w-5 ${ticket.status === 'open' ? 'text-status-open animate-pulse' : 'text-muted-foreground'}`} />
+              {isEditingTime ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={timeInput}
+                    onChange={(e) => setTimeInput(e.target.value)}
+                    placeholder="HH:MM:SS"
+                    className="w-28 font-mono text-center"
+                  />
+                  <Button size="sm" onClick={handleSaveTime}>
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setIsEditingTime(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className={`text-2xl font-mono font-bold ${ticket.status === 'open' ? 'text-status-open' : 'text-foreground'}`}>
+                    {formatTime(displayTime)}
+                  </span>
+                  <Button size="icon" variant="ghost" onClick={startEditingTime} className="h-8 w-8">
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {ticket.status === 'open' ? 'Em andamento' : ticket.status === 'paused' ? 'Pausado' : 'Finalizado'}
+            </span>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-2 flex-wrap">
             {ticket.status === 'open' && (
