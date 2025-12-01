@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, Ticket } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -15,17 +16,20 @@ export const Header = () => {
           <span className="text-xl font-bold gradient-text">FilaZero</span>
         </div>
         
-        {user && (
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              Olá, <span className="font-medium text-foreground">{user.name}</span>
-            </span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {user && (
+            <>
+              <span className="text-sm text-muted-foreground hidden sm:block">
+                Olá, <span className="font-medium text-foreground">{user.name}</span>
+              </span>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
